@@ -880,7 +880,7 @@ begin
     ToonOutput := TToon.JsonToToon(JsonObject);
     Lines := ToonOutput.Split([ToonLineBreak]);
 
-    Assert.AreEqual(3, Length(Lines));
+    Assert.AreEqual<NativeInt>(3, Length(Lines));
     Assert.AreEqual('first: value1', Lines[0]);
     Assert.AreEqual('second: value2', Lines[1]);
     Assert.AreEqual('third: value3', Lines[2]);
@@ -904,7 +904,7 @@ begin
     ToonOutput := TToon.JsonToToon(JsonObject);
     Lines := ToonOutput.Split([ToonLineBreak]);
 
-    Assert.AreEqual(3, Length(Lines));
+    Assert.AreEqual<NativeInt>(3, Length(Lines));
     Assert.IsTrue(Lines[0].StartsWith('zebra:'));
     Assert.IsTrue(Lines[1].StartsWith('alpha:'));
     Assert.IsTrue(Lines[2].StartsWith('beta:'));

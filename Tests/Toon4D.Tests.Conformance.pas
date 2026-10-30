@@ -65,12 +65,6 @@ type
     procedure DelimiterPipe_ShouldMatchExpected;
 
     [Test]
-    procedure KeyFoldingSafe_ShouldMatchExpected;
-
-    [Test]
-    procedure KeyFoldingAggressive_ShouldMatchExpected;
-
-    [Test]
     procedure QuotingEmpty_ShouldMatchExpected;
 
     [Test]
@@ -308,7 +302,7 @@ var
   Actual: string;
 begin
   JsonInput := '{"items":[]}';
-  Expected := 'items[0]:';
+  Expected := 'items: []';
   Actual := TToon.JsonToToon(JsonInput);
   Assert.AreEqual(TToonTestHelpers.NormalizeLineEndings(Expected), Actual);
 end;
@@ -350,7 +344,7 @@ var
 begin
   JsonInput := '{"items":["a","b","c"]}';
   Expected := 'items[3]: a,b,c';
-  Options := [TToonOption.DelimiterComma];
+  Options := TToonOptions.Default;
   Actual := TToon.JsonToToon(JsonInput, Options);
   Assert.AreEqual(TToonTestHelpers.NormalizeLineEndings(Expected), Actual);
 end;
@@ -362,7 +356,7 @@ var
   Options: TToonOptions;
 begin
   JsonInput := '{"items":["a","b","c"]}';
-  Options := [TToonOption.DelimiterTab];
+  Options := TToonTestHelpers.Delimited(TToonDelimiter.Tab);
   Actual := TToon.JsonToToon(JsonInput, Options);
   Assert.Contains(Actual, 'items[3' + #9 + ']:');
   Assert.Contains(Actual, 'a' + #9 + 'b' + #9 + 'c');
@@ -377,35 +371,9 @@ var
 begin
   JsonInput := '{"items":["a","b","c"]}';
   Expected := 'items[3|]: a|b|c';
-  Options := [TToonOption.DelimiterPipe];
+  Options := TToonTestHelpers.Delimited(TToonDelimiter.Pipe);
   Actual := TToon.JsonToToon(JsonInput, Options);
   Assert.AreEqual(TToonTestHelpers.NormalizeLineEndings(Expected), Actual);
-end;
-
-procedure TConformanceTests.KeyFoldingSafe_ShouldMatchExpected;
-var
-  JsonInput: string;
-  Expected: string;
-  Actual: string;
-  Options: TToonOptions;
-begin
-  JsonInput := '{"data":{"metadata":{"version":1.0}}}';
-  Expected := 'data.metadata.version: 1';
-  Options := [TToonOption.KeyFoldingSafe];
-  Actual := TToon.JsonToToon(JsonInput, Options);
-  Assert.AreEqual(TToonTestHelpers.NormalizeLineEndings(Expected), Actual);
-end;
-
-procedure TConformanceTests.KeyFoldingAggressive_ShouldMatchExpected;
-var
-  JsonInput: string;
-  Actual: string;
-  Options: TToonOptions;
-begin
-  JsonInput := '{"data":{"metadata":{"version":"1.0"}}}';
-  Options := [TToonOption.KeyFoldingAggressive];
-  Actual := TToon.JsonToToon(JsonInput, Options);
-  Assert.Contains(Actual, 'data.metadata.version:');
 end;
 
 procedure TConformanceTests.QuotingEmpty_ShouldMatchExpected;
@@ -545,7 +513,7 @@ begin
 outer:
   inner: value
 '''.Trim;
-  Options := [TToonOption.Indent2Spaces];
+  Options := TToonTestHelpers.Indented(2);
   Actual := TToon.JsonToToon(JsonInput, Options);
   Assert.AreEqual(TToonTestHelpers.NormalizeLineEndings(Expected), Actual);
 end;
@@ -562,7 +530,7 @@ begin
 outer:
     inner: value
 '''.Trim;
-  Options := [TToonOption.Indent4Spaces];
+  Options := TToonTestHelpers.Indented(4);
   Actual := TToon.JsonToToon(JsonInput, Options);
   Assert.AreEqual(TToonTestHelpers.NormalizeLineEndings(Expected), Actual);
 end;

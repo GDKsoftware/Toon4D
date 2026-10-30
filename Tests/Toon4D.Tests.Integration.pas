@@ -26,7 +26,7 @@ type
     procedure RestApiNestedResponse_ShouldEncodeCorrectly;
 
     [Test]
-    procedure NestedSingleKeyPath_ShouldFold;
+    procedure NestedSingleKeyPath_ShouldStayNested;
 
     [Test]
     procedure EcommerceOrderList_ShouldEncodeTabularWithMixedTypes;
@@ -117,7 +117,8 @@ implementation
 
 uses
   Toon4D,
-  Toon4D.Types;
+  Toon4D.Types,
+  Toon4D.Tests.Helpers;
 
 procedure TIntegrationTests.RestApiUserList_ShouldEncodeAsTabular;
 var
@@ -166,22 +167,16 @@ begin
   Assert.Contains(ToonOutput, 'timestamp:');
 end;
 
-procedure TIntegrationTests.NestedSingleKeyPath_ShouldFold;
+procedure TIntegrationTests.NestedSingleKeyPath_ShouldStayNested;
 var
   JsonString: string;
   ToonOutput: string;
-  Options: TToonOptions;
 begin
   JsonString := '{"data":{"metadata":{"version":1}}}';
 
-  Options := [
-    TToonOption.KeyFoldingSafe,
-    TToonOption.Indent2Spaces
-  ];
+  ToonOutput := TToon.JsonToToon(JsonString);
 
-  ToonOutput := TToon.JsonToToon(JsonString, Options);
-
-  Assert.Contains(ToonOutput, 'data.metadata.version:');
+  Assert.AreEqual('data:'#10'  metadata:'#10'    version: 1', ToonOutput);
 end;
 
 procedure TIntegrationTests.EcommerceOrderList_ShouldEncodeTabularWithMixedTypes;
@@ -357,7 +352,7 @@ begin
   }
   ''';
 
-  Options := [TToonOption.DelimiterPipe];
+  Options := TToonTestHelpers.Delimited(TToonDelimiter.Pipe);
   ToonOutput := TToon.JsonToToon(JsonString, Options);
 
   Assert.Contains(ToonOutput, 'items[3|]:');
@@ -527,7 +522,7 @@ begin
 
   ToonOutput := TToon.JsonToToon(JsonString);
 
-  Assert.Contains(ToonOutput, 'items[0]:');
+  Assert.Contains(ToonOutput, 'items: []');
   Assert.Contains(ToonOutput, 'count: 0');
 end;
 
@@ -813,13 +808,13 @@ var
 begin
   JsonString := '{"items":["a","b","c"]}';
 
-  ToonComma := TToon.JsonToToon(JsonString, [TToonOption.DelimiterComma]);
+  ToonComma := TToon.JsonToToon(JsonString, TToonOptions.Default);
   Assert.Contains(ToonComma, 'items[3]: a,b,c');
 
-  ToonTab := TToon.JsonToToon(JsonString, [TToonOption.DelimiterTab]);
+  ToonTab := TToon.JsonToToon(JsonString, TToonTestHelpers.Delimited(TToonDelimiter.Tab));
   Assert.Contains(ToonTab, 'items[3' + #9 + ']:');
 
-  ToonPipe := TToon.JsonToToon(JsonString, [TToonOption.DelimiterPipe]);
+  ToonPipe := TToon.JsonToToon(JsonString, TToonTestHelpers.Delimited(TToonDelimiter.Pipe));
   Assert.Contains(ToonPipe, 'items[3|]: a|b|c');
 end;
 
@@ -831,10 +826,10 @@ var
 begin
   JsonString := '{"outer":{"inner":"value"}}';
 
-  Toon2Spaces := TToon.JsonToToon(JsonString, [TToonOption.Indent2Spaces]);
+  Toon2Spaces := TToon.JsonToToon(JsonString, TToonTestHelpers.Indented(2));
   Assert.IsTrue(Toon2Spaces.Contains('  '), 'Should contain 2-space indentation');
 
-  Toon4Spaces := TToon.JsonToToon(JsonString, [TToonOption.Indent4Spaces]);
+  Toon4Spaces := TToon.JsonToToon(JsonString, TToonTestHelpers.Indented(4));
   Assert.IsTrue(Toon4Spaces.Contains('    '), 'Should contain 4-space indentation');
 end;
 

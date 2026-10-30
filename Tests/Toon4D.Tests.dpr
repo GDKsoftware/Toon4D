@@ -17,7 +17,6 @@ uses
   Toon4D.Tests.Primitives in 'Toon4D.Tests.Primitives.pas',
   Toon4D.Tests.Arrays in 'Toon4D.Tests.Arrays.pas',
   Toon4D.Tests.Nesting in 'Toon4D.Tests.Nesting.pas',
-  Toon4D.Tests.KeyFolding in 'Toon4D.Tests.KeyFolding.pas',
   Toon4D.Tests.Delimiters in 'Toon4D.Tests.Delimiters.pas',
   Toon4D.Tests.EdgeCases in 'Toon4D.Tests.EdgeCases.pas',
   Toon4D.Tests.Integration in 'Toon4D.Tests.Integration.pas',
@@ -27,7 +26,8 @@ uses
   Toon4D.Tests.Whitespace in 'Toon4D.Tests.Whitespace.pas',
   Toon4D.Tests.ObjectEdgeCases in 'Toon4D.Tests.ObjectEdgeCases.pas',
   Toon4D.Tests.ArrayEdgeCases in 'Toon4D.Tests.ArrayEdgeCases.pas',
-  Toon4D.Tests.OfficialFixtures in 'Toon4D.Tests.OfficialFixtures.pas';
+  Toon4D.Tests.OfficialFixtures in 'Toon4D.Tests.OfficialFixtures.pas',
+  Toon4D.Tests.Encoder in 'Toon4D.Tests.Encoder.pas';
 
 {$IFNDEF TESTINSIGHT}
 var

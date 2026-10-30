@@ -17,82 +17,52 @@ uses
 
 type
   {$SCOPEDENUMS ON}
-  TToonOption = (
-    Indent2Spaces,
-    Indent4Spaces,
-    IndentCustom,
-    DelimiterComma,
-    DelimiterTab,
-    DelimiterPipe,
-    KeyFoldingNone,
-    KeyFoldingSafe,
-    KeyFoldingAggressive,
-    KeyFoldingDepth1,
-    KeyFoldingDepth2,
-    PreferTabular,
-    PreferList,
-    ForceInlineForPrimitives,
-    StrictValidation,
-    LenientValidation,
-    MinimalQuoting,
-    AlwaysQuoteStrings,
-    NormalizeNumbers,
-    PreserveNumberFormat,
-    NoTrailingWhitespace,
-    CompactOutput,
-    GracefulDegradation,
-    StrictConformance
-  );
+  TToonDelimiter = (Comma, Tab, Pipe);
   {$SCOPEDENUMS OFF}
 
-  TToonOptions = set of TToonOption;
+  TToonDelimiterHelper = record helper for TToonDelimiter
+    function Character: Char;
+    function HeaderSymbol: string;
+  end;
 
-  TToonIndentSize = 2..8;
+  TToonOptions = record
+    IndentSize: Integer;
+    Delimiter: TToonDelimiter;
 
-  TToonConfig = record
-    Options: TToonOptions;
-    CustomIndentSize: TToonIndentSize;
-    class function Default: TToonConfig; static;
-    class function Minimal: TToonConfig; static;
-    class function Strict: TToonConfig; static;
+    class function Default: TToonOptions; static;
   end;
 
   EToonException = class(Exception);
-  EToonEncodingException = class(EToonException);
   EToonInvalidJsonException = class(EToonException);
-  EToonConfigurationException = class(EToonException);
+  EToonInvalidOptionsException = class(EToonException);
+  EToonEncodingException = class(EToonException);
 
 implementation
 
-class function TToonConfig.Default: TToonConfig;
+function TToonDelimiterHelper.Character: Char;
 begin
-  Result.Options := [
-    TToonOption.Indent2Spaces,
-    TToonOption.DelimiterComma,
-    TToonOption.KeyFoldingSafe,
-    TToonOption.PreferTabular
-  ];
-  Result.CustomIndentSize := 2;
+  case Self of
+    TToonDelimiter.Comma : Result := ',';
+    TToonDelimiter.Tab   : Result := #9;
+    TToonDelimiter.Pipe  : Result := '|';
+  else
+    raise ENotSupportedException.CreateFmt('Unsupported delimiter: %d', [Ord(Self)]);
+  end;
 end;
 
-class function TToonConfig.Minimal: TToonConfig;
+function TToonDelimiterHelper.HeaderSymbol: string;
 begin
-  Result.Options := [
-    TToonOption.Indent2Spaces,
-    TToonOption.DelimiterComma
-  ];
-  Result.CustomIndentSize := 2;
+  const IsDefaultDelimiter = (Self = TToonDelimiter.Comma);
+  if IsDefaultDelimiter then
+    Exit('');
+
+  Result := Character;
 end;
 
-class function TToonConfig.Strict: TToonConfig;
+class function TToonOptions.Default: TToonOptions;
 begin
-  Result.Options := [
-    TToonOption.Indent2Spaces,
-    TToonOption.DelimiterComma,
-    TToonOption.StrictValidation,
-    TToonOption.StrictConformance
-  ];
-  Result.CustomIndentSize := 2;
+  Result.IndentSize := 2;
+  Result.Delimiter  := TToonDelimiter.Comma;
 end;
 
 end.

@@ -88,7 +88,10 @@
         <DCCReference Include="rtl.dcp"/>
         <DCCReference Include="..\..\Source\Toon4D.Consts.pas"/>
         <DCCReference Include="..\..\Source\Toon4D.Types.pas"/>
-        <DCCReference Include="..\..\Source\Toon4D.Utils.pas"/>
+        <DCCReference Include="..\..\Source\Toon4D.Numbers.pas"/>
+        <DCCReference Include="..\..\Source\Toon4D.Text.pas"/>
+        <DCCReference Include="..\..\Source\Toon4D.Fields.pas"/>
+        <DCCReference Include="..\..\Source\Toon4D.Encoder.pas"/>
         <DCCReference Include="..\..\Source\Toon4D.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>

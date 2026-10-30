@@ -1,269 +1,121 @@
-# Toon4D Library - LLM Data Optimization
+# Toon4D
 
-**Token-Oriented Object Notation (TOON) Encoder for Delphi**
+Toon4D is a Delphi encoder that turns JSON into TOON (Token-Oriented Object Notation), a compact text format for sending structured data to large language models. It targets version 4.4 of the [TOON specification](https://github.com/toon-format/spec) (`toon-spec: 4.4`) and passes the official encoder fixtures.
 
-## Overview
+Toon4D uses only the Delphi RTL. It encodes; it does not decode TOON.
 
-Toon4D is a Delphi library that encodes JSON data to TOON format - a compact, human-readable serialization format designed specifically for Large Language Model (LLM) applications. TOON achieves **30-60% token reduction** compared to standard JSON while maintaining or improving LLM comprehension.
+## Installation
 
-## Key Features
+Install the DPM package `GDK.Toon4D`, or add `Source` to your search path. Runtime packages for RAD Studio 10.3 to 13 are in `packages`.
 
-- **Full TOON 2.0 Specification Compliance** - Complete implementation of all required features
-- **Token Efficiency** - 30-60% token reduction on typical LLM payloads
-- **Zero Dependencies** - Uses only Delphi RTL (System.JSON)
-- **Cross-Platform** - Windows, macOS, Linux, iOS, Android
-- **Comprehensive Test Suite** - 300+ unit tests covering all edge cases
-- **Clean API** - Embarcadero-style static class methods
+## Usage
 
-## TOON Format Benefits
-
-TOON is specifically designed for LLM prompts and provides:
-
-1. **Tabular Arrays**: Objects with uniform structure encoded as CSV-style rows
-   ```toon
-   users[3]{id,name,role}:
-     1,Alice,admin
-     2,Bob,user
-     3,Charlie,viewer
-   ```
-
-2. **Minimal Syntax**: Removes redundant punctuation (braces, brackets, quotes)
-3. **Explicit Structure**: Array lengths and field names declared upfront for validation
-4. **Indentation-Based**: YAML-like nesting for readability
-
-## Quick Start
-
-### Installation
+Use `Toon4D`, and `Toon4D.Types` for options.
 
 ```pascal
-// Add to your uses clause
 uses
   Toon4D,
   Toon4D.Types;
+
+const Toon = TToon.JsonToToon('{"name":"Alice","age":30,"active":true,"tags":["admin","ops"],"notes":[]}');
 ```
 
-### Basic Usage
+```
+name: Alice
+age: 30
+active: true
+tags[2]: admin,ops
+notes: []
+```
+
+`JsonToToon` takes a JSON string or a `TJSONValue`. The caller keeps ownership of a `TJSONValue`.
+
+### Arrays of objects
+
+An array whose objects share the same keys becomes a table. Columns that hold objects with the same keys become nested field groups.
+
+```
+employees[2]{id,name,role}:
+  1,Alice Johnson,admin
+  2,Bob Smith,user
+```
+
+```
+orders[2]{id,customer{name,country},total}:
+  1,Ada,DK,99.5
+  2,Bob,UK,149
+```
+
+Arrays that do not fit a table are written as a list:
+
+```
+items[2]:
+  - id: 1
+    tags[2]: x,y
+  - id: 2
+    note: "#todo"
+```
+
+### Objects of objects
+
+An object with two or more entries whose values share the same keys becomes a keyed table:
+
+```
+servers[2:]{host,port}:
+  alpha: a.example.com,8080
+  beta: b.example.com,9090
+```
+
+The specification decides which form a value gets. There is no option to prefer one form over another.
+
+## Options
 
 ```pascal
-var
-  JsonString := '{"name":"Alice","age":30,"active":true}';
-  ToonOutput := TToon.JsonToToon(JsonString);
+var Options := TToonOptions.Default;
+Options.IndentSize := 4;
+Options.Delimiter := TToonDelimiter.Pipe;
 
-// Result:
-// name: Alice
-// age: 30
-// active: true
+const Toon = TToon.JsonToToon(Json, Options);
 ```
 
-### Tabular Arrays
-
-```pascal
-var
-  JsonString := '''
-  {
-    "employees": [
-      {"id": 1, "name": "Alice Johnson", "role": "admin"},
-      {"id": 2, "name": "Bob Smith", "role": "user"},
-      {"id": 3, "name": "Charlie Brown", "role": "user"}
-    ]
-  }
-  ''';
-
-  ToonOutput := TToon.JsonToToon(JsonString);
-
-// Result:
-// employees[3]{id,name,role}:
-//   1,Alice Johnson,admin
-//   2,Bob Smith,user
-//   3,Charlie Brown,user
+```
+team:
+    lead: Ada
+    members[2|]{id|name}:
+        1|Bob
+        2|Cy
 ```
 
-### Configuration Options
+| Field | Default | Values |
+|-------|---------|--------|
+| `IndentSize` | 2 | Spaces per level, 1 or more |
+| `Delimiter` | `TToonDelimiter.Comma` | `Comma`, `Tab` or `Pipe` |
 
-```pascal
-var
-  Options: TToonOptions := [
-    TToonOption.Indent4Spaces,      // Use 4 spaces instead of 2
-    TToonOption.DelimiterPipe,      // Use pipe delimiter instead of comma
-    TToonOption.KeyFoldingAggressive, // Aggressive key folding
-    TToonOption.PreferTabular       // Prefer tabular format for arrays
-  ];
+These are the two encoder options the specification defines.
 
-  ToonOutput := TToon.JsonToToon(JsonString, Options);
+## Numbers
+
+Numbers are written from the decimal text of the `TJSONNumber`, so a parsed number keeps every digit it had in the JSON: `1.5000` becomes `1.5` and `1e6` becomes `1000000`. Values from 0.000001 up to, but not including, 1e21 are written without an exponent. Smaller and larger values use exponent notation, such as `1e-7` and `1.23e+100`. `NaN` and infinity become `null`.
+
+## Errors
+
+| Exception | Raised when |
+|-----------|-------------|
+| `EToonInvalidJsonException` | The JSON string does not parse, or the `TJSONValue` is nil |
+| `EToonInvalidOptionsException` | `IndentSize` is less than 1 |
+| `EToonEncodingException` | A string or key contains an unpaired UTF-16 surrogate |
+
+All three descend from `EToonException`.
+
+## Building and testing
+
+```batch
+build.bat
 ```
 
-## Project Structure
+This builds the DUnitX suite in `Tests` for Win32 and Win64 and runs it on both. From a RAD Studio command prompt it uses the Delphi of that prompt, otherwise the newest RAD Studio installed. The test suite uses multiline string literals and needs Delphi 12 or later.
 
-```
-Toon4D/
-├── Source/
-│   ├── Toon4D.pas              // Main API (TToon static class)
-│   ├── Toon4D.Types.pas        // Types, enums, options, exceptions
-│   ├── Toon4D.Consts.pas       // Constants and resourcestrings
-│   └── Toon4D.Utils.pas        // Utility functions
-├── Tests/
-│   ├── Toon4D.Tests.dpr        // Test project
-│   ├── Toon4D.Tests.Primitives.pas
-│   ├── Toon4D.Tests.Arrays.pas
-│   ├── Toon4D.Tests.ArrayEdgeCases.pas
-│   ├── Toon4D.Tests.RootArrays.pas
-│   ├── Toon4D.Tests.Nesting.pas
-│   ├── Toon4D.Tests.KeyFolding.pas
-│   ├── Toon4D.Tests.KeyEdgeCases.pas
-│   ├── Toon4D.Tests.Delimiters.pas
-│   ├── Toon4D.Tests.EdgeCases.pas
-│   ├── Toon4D.Tests.ObjectEdgeCases.pas
-│   ├── Toon4D.Tests.Whitespace.pas
-│   ├── Toon4D.Tests.Integration.pas
-│   ├── Toon4D.Tests.Conformance.pas
-│   ├── Toon4D.Tests.OfficialFixtures.pas
-│   └── Toon4D.Tests.Helpers.pas
-├── SPEC.md                     // Detailed technical specification
-└── README.md                   // This file
-```
-
-## Configuration Options
-
-### TToonOption Enumeration
-
-```pascal
-type
-  TToonOption = (
-    // Indentation (mutually exclusive)
-    Indent2Spaces,              // Default: 2 spaces per level
-    Indent4Spaces,              // 4 spaces per level
-    IndentCustom,               // Use CustomIndentSize
-
-    // Delimiter selection (mutually exclusive)
-    DelimiterComma,             // Default: comma separator
-    DelimiterTab,               // Tab separator
-    DelimiterPipe,              // Pipe separator
-
-    // Key folding strategy (mutually exclusive)
-    KeyFoldingNone,             // No key folding
-    KeyFoldingSafe,             // Default: fold safe identifier chains
-    KeyFoldingAggressive,       // Aggressive folding
-
-    // Array format preferences
-    PreferTabular,              // Default: prefer tabular for uniform arrays
-    PreferList,                 // Prefer list format
-    ForceInlineForPrimitives,   // Force inline for primitive arrays
-
-    // Validation strictness
-    StrictValidation,           // Strict TOON validation
-    LenientValidation,          // Lenient validation
-
-    // Quote minimization
-    MinimalQuoting,             // Default: minimal quotes
-    AlwaysQuoteStrings,         // Always quote string values
-
-    // Number formatting
-    NormalizeNumbers,           // Default: canonical form
-    PreserveNumberFormat,       // Preserve JSON number format
-
-    // Whitespace handling
-    NoTrailingWhitespace,       // Remove trailing whitespace
-    CompactOutput,              // Minimize whitespace
-
-    // Error handling
-    GracefulDegradation,        // Default: convert invalid to valid
-    StrictConformance           // Raise exceptions on errors
-  );
-
-  TToonOptions = set of TToonOption;
-```
-
-## API Reference
-
-### TToon Class
-
-#### JsonToToon (TJSONValue overload)
-
-```pascal
-class function JsonToToon(
-  JsonValue: TJSONValue;
-  Options: TToonOptions = []
-): string;
-```
-
-Encodes a TJSONValue to TOON format.
-
-**Parameters:**
-- `JsonValue`: The JSON value to encode (must not be nil)
-- `Options`: Encoding options (defaults to safe defaults)
-
-**Returns:** TOON formatted string
-
-**Raises:**
-- `EToonInvalidJsonException` - When JsonValue is nil or invalid
-- `EToonEncodingException` - When encoding fails in strict mode
-
-#### JsonToToon (String overload)
-
-```pascal
-class function JsonToToon(
-  const JsonString: string;
-  Options: TToonOptions = []
-): string;
-```
-
-Encodes a JSON string to TOON format.
-
-**Parameters:**
-- `JsonString`: Valid JSON string
-- `Options`: Encoding options
-
-**Returns:** TOON formatted string
-
-**Raises:**
-- `EToonInvalidJsonException` - When JSON string is malformed
-- `EToonEncodingException` - When encoding fails in strict mode
-
-#### Validate
-
-```pascal
-class function Validate(
-  const ToonString: string;
-  out ErrorMessage: string
-): Boolean;
-```
-
-Validates a TOON string against the specification.
-
-**Parameters:**
-- `ToonString`: TOON formatted string to validate
-- `ErrorMessage`: Output parameter with error details
-
-**Returns:** True if valid, False otherwise
-
-#### GetLibraryVersion
-
-```pascal
-class function GetLibraryVersion: string;
-```
-
-Returns the library version string (e.g., "1.0.0").
-
-## References
-
-### Official TOON Resources
-
-1. **TOON Specification v2.0**
-   https://github.com/toon-format/spec
-
-2. **TOON Format Repository**
-   https://github.com/toon-format/toon
-
-3. **Official Test Fixtures** (340+ tests)
-   https://github.com/toon-format/spec/tree/main/tests/fixtures
-
-### Delphi Resources
-
-4. **System.JSON Documentation**
-   https://docwiki.embarcadero.com/Libraries/en/System.JSON
-
-5. **DUnitX Testing Framework**
-   https://github.com/VSoftTechnologies/DUnitX
+`Tests/fixtures` holds the encoder fixtures from the [specification repository](https://github.com/toon-format/spec/tree/main/tests/fixtures/encode). `Toon4D.Tests.OfficialFixtures` runs every fixture in those files and reports each one that fails.
 
 ## License
 

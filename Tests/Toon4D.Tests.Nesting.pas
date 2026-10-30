@@ -35,7 +35,7 @@ type
     procedure NestedArrayInObject_ShouldIndentArray;
 
     [Test]
-    procedure NestedObjectInArray_ShouldIndentObject;
+    procedure NestedObjectInArray_ShouldUseNestedFieldGroup;
 
     [Test]
     procedure DeepNesting_ShouldMaintainConsistentIndent;
@@ -56,7 +56,7 @@ type
     procedure NestedObjectWithMultipleKeys_ShouldIndentEach;
 
     [Test]
-    procedure ListArrayWithNestedObjects_ShouldIndentProperly;
+    procedure ArrayWithUniformNestedObjects_ShouldUseNestedFieldGroup;
 
     [Test]
     procedure EmptyInnerArrays_ShouldEncode;
@@ -223,7 +223,7 @@ permissions:
   end;
 end;
 
-procedure TNestingTests.NestedObjectInArray_ShouldIndentObject;
+procedure TNestingTests.NestedObjectInArray_ShouldUseNestedFieldGroup;
 var
   JsonObject: TJSONObject;
   JsonArray: TJSONArray;
@@ -246,10 +246,7 @@ begin
     JsonObject.AddPair('users', JsonArray);
 
     ToonOutput := TToon.JsonToToon(JsonObject);
-    Assert.Contains(ToonOutput, 'users[1]:');
-    Assert.Contains(ToonOutput, '  - id: 1');
-    Assert.Contains(ToonOutput, '    address:');
-    Assert.Contains(ToonOutput, '      city: NYC');
+    Assert.AreEqual('users[1]{id,address{city}}:'#10'  1,NYC', ToonOutput);
   finally
     JsonObject.Free;
   end;
@@ -324,7 +321,7 @@ begin
     NestedObject.AddPair('key', 'value');
     JsonObject.AddPair('nested', NestedObject);
 
-    Options := [TToonOption.Indent4Spaces];
+    Options := TToonTestHelpers.Indented(4);
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, '    key: value');
@@ -412,7 +409,7 @@ nested:
   end;
 end;
 
-procedure TNestingTests.ListArrayWithNestedObjects_ShouldIndentProperly;
+procedure TNestingTests.ArrayWithUniformNestedObjects_ShouldUseNestedFieldGroup;
 var
   JsonObject: TJSONObject;
   JsonArray: TJSONArray;
@@ -443,10 +440,7 @@ begin
     JsonObject.AddPair('items', JsonArray);
     ToonOutput := TToon.JsonToToon(JsonObject);
 
-    Assert.Contains(ToonOutput, 'items[2]:');
-    Assert.Contains(ToonOutput, '  - id: 1');
-    Assert.Contains(ToonOutput, '    coords:');
-    Assert.Contains(ToonOutput, '      x: 10');
+    Assert.AreEqual('items[2]{id,coords{x}}:'#10'  1,10'#10'  2,20', ToonOutput);
   finally
     JsonObject.Free;
   end;
@@ -557,7 +551,7 @@ begin
 
     JsonObject.AddPair('data', NestedObject);
 
-    Options := [TToonOption.DelimiterComma];
+    Options := TToonOptions.Default;
     Result := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(Result, '"a,b"', 'String with delimiter should be quoted in nested context');
