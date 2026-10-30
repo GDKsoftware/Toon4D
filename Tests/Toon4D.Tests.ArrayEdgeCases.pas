@@ -109,7 +109,7 @@ begin
 
     JsonObject.AddPair('users', JsonArray);
 
-    Options := [TToonOption.DelimiterComma];
+    Options := TToonOptions.Default;
     Result := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(Result, '"Smith,Jr"', 'Value with delimiter must be quoted in tabular array');
@@ -253,7 +253,7 @@ begin
     JsonObject.AddPair('items', JsonArray);
     Result := TToon.JsonToToon(JsonObject);
 
-    Assert.Contains(Result, 'tags[0]:');
+    Assert.Contains(Result, 'tags: []');
   finally
     JsonObject.Free;
   end;

@@ -58,7 +58,7 @@ begin
     JsonArray.Add('b');
     JsonArray.Add('c');
 
-    Options := [TToonOption.DelimiterTab];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Tab);
     Result := TToon.JsonToToon(JsonArray, Options);
 
     Expected := '[3' + #9 + ']: a' + #9 + 'b' + #9 + 'c';
@@ -81,7 +81,7 @@ begin
     JsonArray.Add('b');
     JsonArray.Add('c');
 
-    Options := [TToonOption.DelimiterPipe];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Pipe);
     Result := TToon.JsonToToon(JsonArray, Options);
 
     Expected := '[3|]: a|b|c';

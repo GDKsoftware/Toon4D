@@ -2,7 +2,7 @@
 {                                                       }
 {         Toon4D Library - LLM Data Optimization        }
 {                                                       }
-{     Copyright(c) 2025 [Organization/Author Name]      }
+{     Copyright(c) 2025 Marco Geuze - GDK Software      }
 {              All rights reserved                      }
 {                                                       }
 {              Licensed under MIT License               }
@@ -10,301 +10,117 @@
 {*******************************************************}
 unit Toon4D.Tests.OfficialFixtures;
 
-/// <summary>
-/// Tests using official TOON specification fixture files
-/// Fixtures stored locally in Tests/fixtures/ directory
-/// </summary>
-
 interface
 
 uses
   DUnitX.TestFramework,
   System.JSON,
-  System.SysUtils,
-  System.Classes,
-  System.IOUtils,
-  System.Generics.Collections,
-  Toon4D,
-  Toon4D.Types,
-  Toon4D.Tests.Helpers;
+  Toon4D.Types;
 
 type
-  TFixtureTest = record
-    Name: string;
-    Description: string;
-    Input: TJSONValue;
-    Expected: string;
-    Options: TToonOptions;
-  end;
-
   [TestFixture]
   TOfficialFixturesTests = class
+  private
+    class function FixturesDirectory: string; static;
+    class function OptionsOf(const Fixture: TJSONObject): TToonOptions; static;
+    class function DelimiterOf(const Symbol: string): TToonDelimiter; static;
+    class function MismatchOf(const Fixture: TJSONObject): string; static;
+
   public
     [Test]
-    procedure Primitives_OfficialFixtures;
-    [Test]
-    procedure ArraysPrimitive_OfficialFixtures;
-    [Test]
-    procedure ArraysTabular_OfficialFixtures;
-    [Test]
-    procedure ArraysObjects_OfficialFixtures;
-    [Test]
-    procedure ArraysNested_OfficialFixtures;
-    [Test]
-    procedure Objects_OfficialFixtures;
-    [Test]
-    procedure KeyFolding_OfficialFixtures;
-    [Test]
-    procedure Delimiters_OfficialFixtures;
-    [Test]
-    procedure Whitespace_OfficialFixtures;
+    [TestCase('Primitives', 'primitives.json')]
+    [TestCase('Objects', 'objects.json')]
+    [TestCase('ObjectsKeyed', 'objects-keyed.json')]
+    [TestCase('ArraysPrimitive', 'arrays-primitive.json')]
+    [TestCase('ArraysTabular', 'arrays-tabular.json')]
+    [TestCase('ArraysObjects', 'arrays-objects.json')]
+    [TestCase('ArraysNested', 'arrays-nested.json')]
+    [TestCase('Delimiters', 'delimiters.json')]
+    [TestCase('Whitespace', 'whitespace.json')]
+    procedure Encode_MatchesOfficialFixtures(const FileName: string);
   end;
 
 implementation
 
-var
-  GFixturesPath: string;
+uses
+  System.SysUtils,
+  System.Classes,
+  System.IOUtils,
+  Toon4D;
 
-function GetFixturesPath: string;
+procedure TOfficialFixturesTests.Encode_MatchesOfficialFixtures(const FileName: string);
 begin
-  if GFixturesPath = '' then
-  begin
-    var TestExePath := ExtractFilePath(ParamStr(0));
-    var TestsDir := ExtractFilePath(ExcludeTrailingPathDelimiter(TestExePath));
-    TestsDir := ExtractFilePath(ExcludeTrailingPathDelimiter(TestsDir));
-    GFixturesPath := IncludeTrailingPathDelimiter(TestsDir) + 'fixtures\';
+  const FilePath = TPath.Combine(FixturesDirectory, FileName);
+  const Content = TFile.ReadAllText(FilePath, TEncoding.UTF8);
+  const Root = TJSONObject.ParseJSONValue(Content) as TJSONObject;
+  const Mismatches = TStringList.Create;
+  try
+    const Fixtures = Root.GetValue<TJSONArray>('tests');
+    for var Fixture in Fixtures do
+    begin
+      const Mismatch = MismatchOf(Fixture as TJSONObject);
+      if not Mismatch.IsEmpty then
+        Mismatches.Add(Mismatch);
+    end;
+
+    const Summary = Format('%d of %d fixtures in %s fail:%s%s', [Mismatches.Count, Fixtures.Count, FileName, sLineBreak, Mismatches.Text]);
+    Assert.AreEqual(0, Mismatches.Count, Summary);
+  finally
+    Mismatches.Free;
+    Root.Free;
   end;
-  Result := GFixturesPath;
 end;
 
-function LoadFixtureFile(const FileName: string): string;
+class function TOfficialFixturesTests.FixturesDirectory: string;
 begin
-  var LocalPath := GetFixturesPath + FileName;
-
-  if not TFile.Exists(LocalPath) then
-    raise Exception.CreateFmt('Fixture file not found: %s', [LocalPath]);
-
-  Result := TFile.ReadAllText(LocalPath, TEncoding.UTF8);
+  const ExecutableDirectory = TPath.GetDirectoryName(ParamStr(0));
+  const PlatformDirectory = TPath.GetDirectoryName(ExecutableDirectory);
+  const TestsDirectory = TPath.GetDirectoryName(PlatformDirectory);
+  Result := TPath.Combine(TestsDirectory, 'fixtures');
 end;
 
-procedure ParseOptionsFromTest(const TestObj: TJSONObject; out Options: TToonOptions);
+class function TOfficialFixturesTests.MismatchOf(const Fixture: TJSONObject): string;
 begin
-  Options := [];
+  const Name = Fixture.GetValue<string>('name');
+  const Input = Fixture.GetValue('input');
+  const Expected = Fixture.GetValue<string>('expected');
+  const Actual = TToon.JsonToToon(Input, OptionsOf(Fixture));
 
-  var OptionsObj: TJSONObject;
-  if not TestObj.TryGetValue<TJSONObject>('options', OptionsObj) then
+  const IsMatch = (Actual = Expected);
+  if IsMatch then
+    Exit('');
+
+  Result := Format('%s%sexpected:%s%s%sactual:%s%s', [Name, sLineBreak, sLineBreak, Expected, sLineBreak, sLineBreak, Actual]);
+end;
+
+class function TOfficialFixturesTests.OptionsOf(const Fixture: TJSONObject): TToonOptions;
+begin
+  Result := TToonOptions.Default;
+
+  var Options: TJSONObject;
+  if not Fixture.TryGetValue<TJSONObject>('options', Options) then
     Exit;
 
   var Delimiter: string;
-  if OptionsObj.TryGetValue<string>('delimiter', Delimiter) then
-  begin
-    if (Delimiter = 'tab') or (Delimiter = #9) then
-      Options := Options + [TToonOption.DelimiterTab]
-    else if (Delimiter = 'pipe') or (Delimiter = '|') then
-      Options := Options + [TToonOption.DelimiterPipe];
-  end;
-
-  var FlattenDepth: Integer;
-  var HasFlattenDepthZero := OptionsObj.TryGetValue<Integer>('flattenDepth', FlattenDepth) and (FlattenDepth = 0);
-
-  if HasFlattenDepthZero then
-    Options := Options + [TToonOption.KeyFoldingNone]
-  else
-  begin
-    var KeyFolding: string;
-    if OptionsObj.TryGetValue<string>('keyFolding', KeyFolding) then
-    begin
-      if KeyFolding = 'safe' then
-        Options := Options + [TToonOption.KeyFoldingSafe]
-      else if KeyFolding = 'aggressive' then
-        Options := Options + [TToonOption.KeyFoldingAggressive];
-    end;
-
-    if OptionsObj.TryGetValue<Integer>('flattenDepth', FlattenDepth) then
-    begin
-      if FlattenDepth = 1 then
-        Options := Options + [TToonOption.KeyFoldingDepth1]
-      else if FlattenDepth = 2 then
-        Options := Options + [TToonOption.KeyFoldingDepth2];
-    end;
-  end;
+  if Options.TryGetValue<string>('delimiter', Delimiter) then
+    Result.Delimiter := DelimiterOf(Delimiter);
 
   var IndentSize: Integer;
-  if OptionsObj.TryGetValue<Integer>('indent', IndentSize) then
-  begin
-    if IndentSize = 4 then
-      Options := Options + [TToonOption.Indent4Spaces];
-  end;
+  if Options.TryGetValue<Integer>('indentSize', IndentSize) then
+    Result.IndentSize := IndentSize;
 end;
 
-function LoadFixtures(const FileName: string): TArray<TFixtureTest>;
+class function TOfficialFixturesTests.DelimiterOf(const Symbol: string): TToonDelimiter;
 begin
-  var JsonContent := LoadFixtureFile(FileName);
-  var Results := TList<TFixtureTest>.Create;
-  try
-    var RootObj := TJSONObject.ParseJSONValue(JsonContent) as TJSONObject;
-    try
-      var TestsArray: TJSONArray;
-      if not RootObj.TryGetValue<TJSONArray>('tests', TestsArray) then
-        raise Exception.CreateFmt('No "tests" array found in %s', [FileName]);
+  const IsTab = (Symbol = #9);
+  if IsTab then
+    Exit(TToonDelimiter.Tab);
 
-      for var Index := 0 to TestsArray.Count - 1 do
-      begin
-        var TestObj := TestsArray.Items[Index] as TJSONObject;
+  const IsPipe = (Symbol = '|');
+  if IsPipe then
+    Exit(TToonDelimiter.Pipe);
 
-        var Test: TFixtureTest;
-        Test.Name := TestObj.GetValue<string>('name');
-        Test.Description := TestObj.GetValue<string>('description', '');
-        Test.Input := TestObj.GetValue<TJSONValue>('input').Clone as TJSONValue;
-        Test.Expected := TestObj.GetValue<string>('expected');
-
-        ParseOptionsFromTest(TestObj, Test.Options);
-
-        Results.Add(Test);
-      end;
-
-      Result := Results.ToArray;
-    finally
-      RootObj.Free;
-    end;
-  finally
-    Results.Free;
-  end;
-end;
-
-procedure TOfficialFixturesTests.Primitives_OfficialFixtures;
-begin
-  var Fixtures := LoadFixtures('primitives.json');
-  try
-    for var Fixture in Fixtures do
-    begin
-      var Actual := TToon.JsonToToon(Fixture.Input, Fixture.Options);
-      Assert.AreEqual(TToonTestHelpers.NormalizeLineEndings(Fixture.Expected), Actual, 'Test: ' + Fixture.Name);
-    end;
-  finally
-    for var Fixture in Fixtures do
-      Fixture.Input.Free;
-  end;
-end;
-
-procedure TOfficialFixturesTests.ArraysPrimitive_OfficialFixtures;
-begin
-  var Fixtures := LoadFixtures('arrays-primitive.json');
-  try
-    for var Fixture in Fixtures do
-    begin
-      var Actual := TToon.JsonToToon(Fixture.Input, Fixture.Options);
-      Assert.AreEqual(TToonTestHelpers.NormalizeLineEndings(Fixture.Expected), Actual, 'Test: ' + Fixture.Name);
-    end;
-  finally
-    for var Fixture in Fixtures do
-      Fixture.Input.Free;
-  end;
-end;
-
-procedure TOfficialFixturesTests.ArraysTabular_OfficialFixtures;
-begin
-  var Fixtures := LoadFixtures('arrays-tabular.json');
-  try
-    for var Fixture in Fixtures do
-    begin
-      var Actual := TToon.JsonToToon(Fixture.Input, Fixture.Options);
-      Assert.AreEqual(TToonTestHelpers.NormalizeLineEndings(Fixture.Expected), Actual, 'Test: ' + Fixture.Name);
-    end;
-  finally
-    for var Fixture in Fixtures do
-      Fixture.Input.Free;
-  end;
-end;
-
-procedure TOfficialFixturesTests.ArraysObjects_OfficialFixtures;
-begin
-  var Fixtures := LoadFixtures('arrays-objects.json');
-  try
-    for var Fixture in Fixtures do
-    begin
-      var Actual := TToon.JsonToToon(Fixture.Input, Fixture.Options);
-      Assert.AreEqual(TToonTestHelpers.NormalizeLineEndings(Fixture.Expected), Actual, 'Test: ' + Fixture.Name);
-    end;
-  finally
-    for var Fixture in Fixtures do
-      Fixture.Input.Free;
-  end;
-end;
-
-procedure TOfficialFixturesTests.ArraysNested_OfficialFixtures;
-begin
-  var Fixtures := LoadFixtures('arrays-nested.json');
-  try
-    for var Fixture in Fixtures do
-    begin
-      var Actual := TToon.JsonToToon(Fixture.Input, Fixture.Options);
-      Assert.AreEqual(TToonTestHelpers.NormalizeLineEndings(Fixture.Expected), Actual, 'Test: ' + Fixture.Name);
-    end;
-  finally
-    for var Fixture in Fixtures do
-      Fixture.Input.Free;
-  end;
-end;
-
-procedure TOfficialFixturesTests.Objects_OfficialFixtures;
-begin
-  var Fixtures := LoadFixtures('objects.json');
-  try
-    for var Fixture in Fixtures do
-    begin
-      var Actual := TToon.JsonToToon(Fixture.Input, Fixture.Options);
-      Assert.AreEqual(TToonTestHelpers.NormalizeLineEndings(Fixture.Expected), Actual, 'Test: ' + Fixture.Name);
-    end;
-  finally
-    for var Fixture in Fixtures do
-      Fixture.Input.Free;
-  end;
-end;
-
-procedure TOfficialFixturesTests.KeyFolding_OfficialFixtures;
-begin
-  var Fixtures := LoadFixtures('key-folding.json');
-  try
-    for var Fixture in Fixtures do
-    begin
-      var Actual := TToon.JsonToToon(Fixture.Input, Fixture.Options);
-      Assert.AreEqual(TToonTestHelpers.NormalizeLineEndings(Fixture.Expected), Actual, 'Test: ' + Fixture.Name);
-    end;
-  finally
-    for var Fixture in Fixtures do
-      Fixture.Input.Free;
-  end;
-end;
-
-procedure TOfficialFixturesTests.Delimiters_OfficialFixtures;
-begin
-  var Fixtures := LoadFixtures('delimiters.json');
-  try
-    for var Fixture in Fixtures do
-    begin
-      var Actual := TToon.JsonToToon(Fixture.Input, Fixture.Options);
-      Assert.AreEqual(TToonTestHelpers.NormalizeLineEndings(Fixture.Expected), Actual, 'Test: ' + Fixture.Name);
-    end;
-  finally
-    for var Fixture in Fixtures do
-      Fixture.Input.Free;
-  end;
-end;
-
-procedure TOfficialFixturesTests.Whitespace_OfficialFixtures;
-begin
-  var Fixtures := LoadFixtures('whitespace.json');
-  try
-    for var Fixture in Fixtures do
-    begin
-      var Actual := TToon.JsonToToon(Fixture.Input, Fixture.Options);
-      Assert.AreEqual(TToonTestHelpers.NormalizeLineEndings(Fixture.Expected), Actual, 'Test: ' + Fixture.Name);
-    end;
-  finally
-    for var Fixture in Fixtures do
-      Fixture.Input.Free;
-  end;
+  Result := TToonDelimiter.Comma;
 end;
 
 end.

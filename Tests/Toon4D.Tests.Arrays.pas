@@ -20,7 +20,7 @@ type
   TArrayTests = class
   public
     [Test]
-    procedure ArrayEmpty_ShouldEncodeWithZeroLength;
+    procedure ArrayEmpty_ShouldEncodeAsEmptyArray;
 
     [Test]
     procedure ArrayPrimitivesInline_ShouldEncodeCommaSeparated;
@@ -92,7 +92,7 @@ type
     procedure ArrayNonUniformObjects_ShouldUseListFormat;
 
     [Test]
-    procedure ArrayObjectsWithNestedValues_ShouldUseListFormat;
+    procedure ArrayObjectsWithNestedValues_ShouldUseNestedFieldGroup;
 
     [Test]
     procedure ArrayRootLevel_ShouldEncodeWithoutKey;
@@ -141,7 +141,7 @@ uses
   Toon4D.Consts,
   Toon4D.Tests.Helpers;
 
-procedure TArrayTests.ArrayEmpty_ShouldEncodeWithZeroLength;
+procedure TArrayTests.ArrayEmpty_ShouldEncodeAsEmptyArray;
 var
   JsonObject: TJSONObject;
   ToonOutput: string;
@@ -150,7 +150,7 @@ begin
   JsonObject := TJSONObject.Create;
   try
     JsonObject.AddPair('items', TJSONArray.Create);
-    Expected := 'items[0]:';
+    Expected := 'items: []';
     ToonOutput := TToon.JsonToToon(JsonObject);
     Assert.AreEqual(Expected, ToonOutput);
   finally
@@ -791,7 +791,7 @@ begin
   end;
 end;
 
-procedure TArrayTests.ArrayObjectsWithNestedValues_ShouldUseListFormat;
+procedure TArrayTests.ArrayObjectsWithNestedValues_ShouldUseNestedFieldGroup;
 var
   JsonObject: TJSONObject;
   JsonArray: TJSONArray;
@@ -813,8 +813,7 @@ begin
     JsonObject.AddPair('users', JsonArray);
     ToonOutput := TToon.JsonToToon(JsonObject);
 
-    Assert.Contains(ToonOutput, 'users[1]:');
-    Assert.IsFalse(ToonOutput.Contains('{id,'));
+    Assert.AreEqual('users[1]{id,address{city}}:'#10'  1,NYC', ToonOutput);
   finally
     JsonObject.Free;
   end;

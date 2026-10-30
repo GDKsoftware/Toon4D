@@ -18,14 +18,9 @@ const
 resourcestring
   ErrorInvalidJson = 'Invalid JSON input: %s';
   ErrorNilJsonValue = 'JSON value cannot be nil';
-  ErrorConflictingOptions = 'Conflicting options specified: %s and %s';
-  ErrorEncodingFailed = 'TOON encoding failed: %s';
-  ErrorStrictValidation = 'Strict validation failed: %s';
-  ErrorInvalidDelimiter = 'Invalid delimiter specified';
-  ErrorInvalidIndentSize = 'Invalid indent size: %d (must be between 2 and 8)';
-
-  InfoTokenReduction = 'Token reduction: %.1f%% (%d → %d tokens)';
-  InfoArrayFormatDetected = 'Array format detected: %s';
+  ErrorInvalidIndentSize = 'Invalid indent size: %d (must be at least 1)';
+  ErrorUnpairedSurrogate = 'String contains an unpaired surrogate at position %d';
+  ErrorUnsupportedJsonValue = 'Unsupported JSON value: %s';
 
 implementation
 

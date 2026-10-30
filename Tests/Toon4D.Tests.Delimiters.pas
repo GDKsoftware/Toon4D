@@ -84,7 +84,8 @@ implementation
 
 uses
   Toon4D,
-  Toon4D.Types;
+  Toon4D.Types,
+  Toon4D.Tests.Helpers;
 
 procedure TDelimiterTests.Comma_InlineArray_ShouldUseComma;
 var
@@ -102,7 +103,7 @@ begin
     JsonArray.Add('c');
     JsonObject.AddPair('items', JsonArray);
 
-    Options := [TToonOption.DelimiterComma];
+    Options := TToonOptions.Default;
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Expected := 'items[3]: a,b,c';
@@ -128,7 +129,7 @@ begin
     JsonArray.Add('c');
     JsonObject.AddPair('items', JsonArray);
 
-    Options := [TToonOption.DelimiterTab];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Tab);
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Expected := 'items[3' + #9 + ']: a' + #9 + 'b' + #9 + 'c';
@@ -154,7 +155,7 @@ begin
     JsonArray.Add('c');
     JsonObject.AddPair('items', JsonArray);
 
-    Options := [TToonOption.DelimiterPipe];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Pipe);
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Expected := 'items[3|]: a|b|c';
@@ -183,7 +184,7 @@ begin
 
     JsonObject.AddPair('users', JsonArray);
 
-    Options := [TToonOption.DelimiterComma];
+    Options := TToonOptions.Default;
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, 'users[1]{id,name}:');
@@ -212,7 +213,7 @@ begin
 
     JsonObject.AddPair('users', JsonArray);
 
-    Options := [TToonOption.DelimiterTab];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Tab);
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, 'users[1' + #9 + ']{id' + #9 + 'name}:');
@@ -240,7 +241,7 @@ begin
 
     JsonObject.AddPair('users', JsonArray);
 
-    Options := [TToonOption.DelimiterPipe];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Pipe);
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, 'users[1|]{id|name}:');
@@ -268,7 +269,7 @@ begin
 
     JsonObject.AddPair('users', JsonArray);
 
-    Options := [TToonOption.DelimiterTab];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Tab);
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, '1' + #9 + 'Alice');
@@ -296,7 +297,7 @@ begin
 
     JsonObject.AddPair('users', JsonArray);
 
-    Options := [TToonOption.DelimiterPipe];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Pipe);
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, '1|Alice');
@@ -319,7 +320,7 @@ begin
     JsonArray.Add('c');
     JsonObject.AddPair('items', JsonArray);
 
-    Options := [TToonOption.DelimiterComma];
+    Options := TToonOptions.Default;
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, '"a,b"');
@@ -342,7 +343,7 @@ begin
     JsonArray.Add('c');
     JsonObject.AddPair('items', JsonArray);
 
-    Options := [TToonOption.DelimiterTab];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Tab);
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, '"a\tb"');
@@ -365,7 +366,7 @@ begin
     JsonArray.Add('c');
     JsonObject.AddPair('items', JsonArray);
 
-    Options := [TToonOption.DelimiterPipe];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Pipe);
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, '"a|b"');
@@ -392,7 +393,7 @@ begin
 
     JsonObject.AddPair('items', JsonArray);
 
-    Options := [TToonOption.DelimiterComma];
+    Options := TToonOptions.Default;
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, 'items[1]{id}:');
@@ -415,7 +416,7 @@ begin
     JsonArray.Add('a');
     JsonObject.AddPair('items', JsonArray);
 
-    Options := [TToonOption.DelimiterTab];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Tab);
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, '[1' + #9 + ']:');
@@ -437,7 +438,7 @@ begin
     JsonArray.Add('a');
     JsonObject.AddPair('items', JsonArray);
 
-    Options := [TToonOption.DelimiterPipe];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Pipe);
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, '[1|]:');
@@ -463,7 +464,7 @@ begin
     OuterArray.Add(InnerArray);
     JsonObject.AddPair('items', OuterArray);
 
-    Options := [TToonOption.DelimiterComma];
+    Options := TToonOptions.Default;
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, 'items[1]:');
@@ -487,7 +488,7 @@ begin
     JsonArray.Add('c');
     JsonObject.AddPair('items', JsonArray);
 
-    Options := [TToonOption.DelimiterTab];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Tab);
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, 'a,b');
@@ -511,7 +512,7 @@ begin
     JsonArray.Add('c');
     JsonObject.AddPair('items', JsonArray);
 
-    Options := [TToonOption.DelimiterPipe];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Pipe);
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, 'a,b');
@@ -534,7 +535,7 @@ begin
     JsonArray.Add('a' + #9 + 'b');
     JsonObject.AddPair('items', JsonArray);
 
-    Options := [TToonOption.DelimiterComma];
+    Options := TToonOptions.Default;
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, '\t', 'Tab should be escaped');
@@ -547,7 +548,7 @@ begin
     JsonArray.Add('c');
     JsonObject.AddPair('items', JsonArray);
 
-    Options := [TToonOption.DelimiterTab];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Tab);
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, '"a\tb"', 'Tab must be quoted when tab is delimiter');
@@ -569,7 +570,7 @@ begin
     JsonArray.Add('a|b');
     JsonObject.AddPair('items', JsonArray);
 
-    Options := [TToonOption.DelimiterComma];
+    Options := TToonOptions.Default;
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, 'a|b');
@@ -583,7 +584,7 @@ begin
     JsonArray.Add('c');
     JsonObject.AddPair('items', JsonArray);
 
-    Options := [TToonOption.DelimiterPipe];
+    Options := TToonTestHelpers.Delimited(TToonDelimiter.Pipe);
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, '"a|b"', 'Pipe must be quoted when pipe is delimiter');
@@ -611,7 +612,7 @@ begin
 
     JsonObject.AddPair('users', JsonArray);
 
-    Options := [TToonOption.DelimiterComma];
+    Options := TToonOptions.Default;
     ToonOutput := TToon.JsonToToon(JsonObject, Options);
 
     Assert.Contains(ToonOutput, '"Smith,John"');

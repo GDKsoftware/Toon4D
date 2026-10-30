@@ -35,7 +35,10 @@ requires
 contains
   Toon4D.Consts in '..\..\Source\Toon4D.Consts.pas',
   Toon4D.Types in '..\..\Source\Toon4D.Types.pas',
-  Toon4D.Utils in '..\..\Source\Toon4D.Utils.pas',
+  Toon4D.Numbers in '..\..\Source\Toon4D.Numbers.pas',
+  Toon4D.Text in '..\..\Source\Toon4D.Text.pas',
+  Toon4D.Fields in '..\..\Source\Toon4D.Fields.pas',
+  Toon4D.Encoder in '..\..\Source\Toon4D.Encoder.pas',
   Toon4D in '..\..\Source\Toon4D.pas';
 
 end.

@@ -35,10 +35,10 @@ type
     procedure RootObject_ShouldEncodeNormally;
 
     [Test]
-    procedure VeryLargeNumber_ShouldEncodeDecimal;
+    procedure VeryLargeNumber_ShouldUseExponentNotation;
 
     [Test]
-    procedure VerySmallNumber_ShouldEncodeDecimal;
+    procedure VerySmallNumber_ShouldUseExponentNotation;
 
     [Test]
     procedure NumberMaxFloat_ShouldEncode;
@@ -86,7 +86,7 @@ type
     procedure NullInObjectKey_ShouldEncode;
 
     [Test]
-    procedure BooleanInKey_ShouldConvertToString;
+    procedure BooleanInKey_ShouldStayUnquoted;
 
     [Test]
     procedure NumberInKey_ShouldConvertToString;
@@ -187,36 +187,29 @@ begin
   end;
 end;
 
-procedure TEdgeCasesTests.VeryLargeNumber_ShouldEncodeDecimal;
+procedure TEdgeCasesTests.VeryLargeNumber_ShouldUseExponentNotation;
 var
   JsonValue: TJSONValue;
   ToonOutput: string;
 begin
-  // Use 1.23e6 instead of 1.23e100 - matches TOON spec examples
-  // Writing out 1.23e100 would produce 100+ digits which is impractical
-  JsonValue := TJSONNumber.Create(1.23e6);
+  JsonValue := TJSONNumber.Create(1.23e100);
   try
     ToonOutput := TToon.JsonToToon(JsonValue);
-    Assert.AreEqual('1230000', ToonOutput);
-    Assert.IsFalse(ToonOutput.Contains('e'));
-    Assert.IsFalse(ToonOutput.Contains('E'));
+    Assert.AreEqual('1.23e+100', ToonOutput);
   finally
     JsonValue.Free;
   end;
 end;
 
-procedure TEdgeCasesTests.VerySmallNumber_ShouldEncodeDecimal;
+procedure TEdgeCasesTests.VerySmallNumber_ShouldUseExponentNotation;
 var
   JsonValue: TJSONValue;
   ToonOutput: string;
 begin
-  // Use 1.23e-6 instead of 1.23e-100 - matches TOON spec examples
-  JsonValue := TJSONNumber.Create(1.23e-6);
+  JsonValue := TJSONNumber.Create(1.23e-100);
   try
     ToonOutput := TToon.JsonToToon(JsonValue);
-    Assert.AreEqual('0.00000123', ToonOutput);
-    Assert.IsFalse(ToonOutput.Contains('e'));
-    Assert.IsFalse(ToonOutput.Contains('E'));
+    Assert.AreEqual('1.23e-100', ToonOutput);
   finally
     JsonValue.Free;
   end;
@@ -345,7 +338,7 @@ begin
 
     ToonOutput := TToon.JsonToToon(JsonObject);
     Lines := ToonOutput.Split([ToonLineBreak]);
-    Assert.AreEqual(100, Length(Lines));
+    Assert.AreEqual<NativeInt>(100, Length(Lines));
   finally
     JsonObject.Free;
   end;
@@ -495,7 +488,7 @@ begin
   end;
 end;
 
-procedure TEdgeCasesTests.BooleanInKey_ShouldConvertToString;
+procedure TEdgeCasesTests.BooleanInKey_ShouldStayUnquoted;
 var
   JsonObject: TJSONObject;
   ToonOutput: string;
@@ -504,7 +497,7 @@ begin
   try
     JsonObject.AddPair('true', 'value');
     ToonOutput := TToon.JsonToToon(JsonObject);
-    Assert.Contains(ToonOutput, '"true":');
+    Assert.AreEqual('true: value', ToonOutput);
   finally
     JsonObject.Free;
   end;
@@ -666,9 +659,7 @@ begin
     JsonObject.AddPair('empty3', TJSONArray.Create);
 
     ToonOutput := TToon.JsonToToon(JsonObject);
-    Assert.Contains(ToonOutput, 'empty1[0]:');
-    Assert.Contains(ToonOutput, 'empty2[0]:');
-    Assert.Contains(ToonOutput, 'empty3[0]:');
+    Assert.AreEqual('empty1: []'#10'empty2: []'#10'empty3: []', ToonOutput);
   finally
     JsonObject.Free;
   end;
